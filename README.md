@@ -39,13 +39,12 @@ This tool offers a straightforward GUI for backing up and restoring qBittorrent 
 
 3. **Create and Activate a Virtual Environment**:
     ```powershell
-    python -m venv venv
-    .\venv\Scripts\activate
+    python -m venv venv && .\venv\Scripts\activate
     ```
 
 4. **Install Required Dependencies**:
     ```powershell
-    pip install -r requirements.txt
+    pip install -r requirements.txt --no-cache-dir
     ```
 
 ---
