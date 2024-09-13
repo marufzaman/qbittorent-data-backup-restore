@@ -1,0 +1,31 @@
+# Python-specific ignores
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+
+# Environment files
+.env
+venv/
+ENV/
+
+# IDE and editor-specific files
+.vscode/
+.idea/
+*.suo
+*.user
+*.swp
+*.swo
+
+# Backup and temporary files
+*.log
+*.tmp
+*.zip
+*.bak
+
+# Operating system-specific files
+.DS_Store
+Thumbs.db
+
+# Other files
+*.png
