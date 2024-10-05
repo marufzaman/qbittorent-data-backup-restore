@@ -17,6 +17,12 @@ def log_message(message):
     log_text.see(tk.END)
     log_text.config(state=tk.DISABLED)
 
+def reset_log():
+    """Clear log and reset it."""
+    log_text.config(state=tk.NORMAL)
+    log_text.delete('1.0', tk.END)
+    log_text.config(state=tk.DISABLED)
+
 def clean_previous_backups(dest_dir):
     """Delete all previous zip files in the destination directory."""
     try:
@@ -92,6 +98,21 @@ def restore(local_qBittorrent, roaming_qBittorrent):
     except Exception as e:
         messagebox.showerror("Error", f"Error during restore: {str(e)}")
 
+def check_qbittorrent_installed():
+    """Check if qBittorrent is installed on Windows."""
+    potential_paths = [
+        r"C:\Program Files\qBittorrent\qbittorrent.exe",
+        r"C:\Program Files (x86)\qBittorrent\qbittorrent.exe"
+    ]
+
+    for path in potential_paths:
+        if os.path.exists(path):
+            return True
+
+    # If not found, display an error
+    messagebox.showerror("Error", "qBittorrent is not installed on this system or is installed in a non-standard directory.")
+    return False
+
 def kill_qbittorrent():
     """Kill the qBittorrent process."""
     try:
@@ -112,21 +133,57 @@ def launch_qbittorrent():
     except Exception as e:
         log_message(f"Error launching qBittorrent: {e}")
 
+def show_spinner(spinner):
+    """Display the spinner (loader)."""
+    spinner.pack(side=tk.LEFT, padx=10)
+    spinner.start()
+
+def hide_spinner(spinner):
+    """Hide the spinner (loader)."""
+    spinner.stop()
+    spinner.pack_forget()
+
 def backup_button_clicked():
     """Handle backup button click."""
-    log_text.config(state=tk.NORMAL)
-    log_text.delete('1.0', tk.END)
-    log_text.config(state=tk.DISABLED)
+    reset_log()
+    if not check_qbittorrent_installed():
+        return
     kill_qbittorrent()
-    Thread(target=lambda: (make_backup(Local_qBittorrent, Roaming_qBittorrent), launch_qbittorrent())).start()
+    
+    # Show the spinner and update the UI
+    show_spinner(backup_spinner)
+    root.update_idletasks()  # Update the UI immediately before starting the task
+
+    # Run the backup task in a separate thread to keep the UI responsive
+    def backup_task():
+        try:
+            make_backup(Local_qBittorrent, Roaming_qBittorrent)
+        finally:
+            launch_qbittorrent()
+            hide_spinner(backup_spinner)
+
+    Thread(target=backup_task).start()
 
 def restore_button_clicked():
     """Handle restore button click."""
-    log_text.config(state=tk.NORMAL)
-    log_text.delete('1.0', tk.END)
-    log_text.config(state=tk.DISABLED)
+    reset_log()
+    if not check_qbittorrent_installed():
+        return
     kill_qbittorrent()
-    Thread(target=lambda: (restore(Local_qBittorrent, Roaming_qBittorrent), launch_qbittorrent())).start()
+    
+    # Show the spinner and update the UI
+    show_spinner(restore_spinner)
+    root.update_idletasks()  # Update the UI immediately before starting the task
+
+    # Run the restore task in a separate thread to keep the UI responsive
+    def restore_task():
+        try:
+            restore(Local_qBittorrent, Roaming_qBittorrent)
+        finally:
+            launch_qbittorrent()
+            hide_spinner(restore_spinner)
+
+    Thread(target=restore_task).start()
 
 def create_placeholder_image(size):
     """Create a colorful placeholder image if the logo is missing."""
@@ -172,7 +229,6 @@ def set_icon_or_placeholder(root, icon_path):
 
             # Display a more elegant message inside the window
             placeholder_text.config(text="Backup Logo Missing")
-            # log_message("\nBackup Logo Missing\n")
     except Exception as e:
         log_message(f"Error setting window icon: {e}")
 
@@ -213,12 +269,12 @@ backup_button.pack(pady=15)
 restore_button = ttk.Button(root, text="Restore qBittorrent", command=restore_button_clicked, style="TButton")
 restore_button.pack(pady=15)
 
-# Log area (log_text placed at the bottom)
-log_label = tk.Label(root, text="Log:", font=("Arial", 12))
-log_label.pack(pady=10, side=tk.BOTTOM)
+# Spinners for Backup and Restore
+backup_spinner = ttk.Progressbar(root, mode='indeterminate')
+restore_spinner = ttk.Progressbar(root, mode='indeterminate')
 
-log_text = ScrolledText(root, height=14, width=60, font=("Arial", 10), bg="lightgray", bd=2, relief="solid")
-log_text.pack(pady=20, padx=10)
-log_text.config(state=tk.DISABLED)
+# Log area (log_text placed at bottom of the window)
+log_text = ScrolledText(root, height=12, wrap=tk.WORD, state=tk.DISABLED)
+log_text.pack(pady=10, padx=10)
 
 root.mainloop()
